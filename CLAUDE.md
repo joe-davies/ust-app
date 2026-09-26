@@ -19,6 +19,7 @@ wrapped for iOS/Android with Capacitor.
 - `src/pages/` — Home, AuthPages (SignUp, Login), Account, Admin (users), Teaching, Study, Community (events/people/communities/stories/TextPage), Placeholder
 - `src/admin/` — `resources.ts` (config for every editable table), `AdminResource.tsx` (generic list/create/edit/delete), `AdminLayout.tsx` (tabs)
 - `src/lib/` — `supabase.ts`, `data.ts` (`useQuery`, date/slug helpers), `types.ts`
+- `src/mystudy/` — My Study (login required): `useOwnRows` CRUD hook, `SavedContext` (+ `SaveButton`), Overview, MyCourses, Deadlines (list + month calendar, includes saved events), Notes, Reading, Saved
 - `src/components/ui.tsx` — PageShell, Async (loading/error), Prose, Card, Tag
 - `supabase/migrations/` — SQL, run manually in the Supabase SQL editor, in order
 
@@ -33,6 +34,9 @@ wrapped for iOS/Android with Capacitor.
 - All content is database-driven and admin-editable. To add an editable content type: new table in a
   numbered migration (RLS: public read where `published`, `is_admin()` write), an entry in
   `src/admin/resources.ts`, and a public page. Text pages (fees, beliefs, give...) live in `public.pages` by slug.
+- Per-student tables (my_courses, deadlines, notes, reading_items, saved_items; migration 0005) have
+  `user_id uuid default auth.uid()` and ONE RLS policy `user_id = auth.uid()` for authenticated only. Never expose
+  them to anon and never write a policy that lets one user read another's rows. Client code never sets user_id.
 - Body text is plain: paragraphs separated by a blank line (rendered by `Prose`).
 - Replace a placeholder page by adding an explicit `<Route>` before the generated ones in `App.tsx`.
 
@@ -53,8 +57,9 @@ wrapped for iOS/Android with Capacitor.
    tables + dummy seed, teaching library (search, topics, scripture, series), courses + course
    picker quiz, events, faculty, Learning Communities, student stories, text pages, Home from DB,
    admin editors for every table, plus in-app user editing (name, student type, role; migration 0004).
-3. **My Study — NEXT:** enrolled courses, deadlines/calendar, notes, reading lists, saved items.
-4. **Polish:** offline, accessibility, Capacitor readiness, code-splitting (bundle is ~530 kB), password login option.
+3. **My Study — DONE:** my courses, deadlines + month calendar, notes, reading lists, saved items (Save buttons on
+   teaching, courses, events), overview page. Migration 0005; RLS isolation tested locally.
+4. **Polish — NEXT:** offline, accessibility, Capacitor readiness, code-splitting (bundle is ~530 kB), password login option.
 
 ## Decisions made
 - Sign-up fields: first name, last name, email, student type (prospective/current). No password:

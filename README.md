@@ -16,7 +16,7 @@ npm run dev
 1. Create a free project at https://supabase.com.
 2. Project Settings > API: copy the **Project URL** and **anon public key** into `.env`.
 3. SQL Editor > New query: run each file in `supabase/migrations/` in order: `0001_profiles.sql`,
-   `0002_content.sql`, `0003_seed.sql` (dummy content; safe to re-run), then `0004_admin_users.sql`.
+   `0002_content.sql`, `0003_seed.sql` (dummy content; safe to re-run), `0004_admin_users.sql`, then `0005_my_study.sql`.
 4. Authentication > URL Configuration: set **Site URL** to your Netlify URL and add
    `http://localhost:5173/**` and your Netlify URL `/**` under **Redirect URLs**.
 5. Sign up in the app, then make yourself admin (SQL editor):

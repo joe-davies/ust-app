@@ -3,6 +3,7 @@ import { formatDateTime, useQuery } from '../lib/data'
 import type { Community, EventItem, PageRow, Person, Testimonial } from '../lib/types'
 import { BRAND } from '../brand'
 import { Async, Card, Empty, PageShell, Prose, Tag } from '../components/ui'
+import { SaveButton } from './../mystudy/SavedContext'
 
 const KIND_LABEL: Record<EventItem['kind'], string> = {
   'open-day': 'Open day',
@@ -33,11 +34,14 @@ export function EventsList() {
                     {formatDateTime(e.starts_at)} · {e.location}
                   </p>
                   {e.description && <p className="mt-2">{e.description}</p>}
-                  {e.url && (
-                    <a href={e.url} className="mt-2 inline-block font-medium text-union-blue-light hover:underline">
-                      Details and booking
-                    </a>
-                  )}
+                  <div className="mt-3 flex flex-wrap items-center gap-4">
+                    <SaveButton type="event" id={e.id} />
+                    {e.url && (
+                      <a href={e.url} className="font-medium text-union-blue-light hover:underline">
+                        Details and booking
+                      </a>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>

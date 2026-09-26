@@ -2,7 +2,6 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './auth/AuthContext'
 import { ProtectedRoute } from './auth/ProtectedRoute'
 import { Layout } from './components/Layout'
-import { ALL_LEAVES } from './nav'
 import Home from './pages/Home'
 import Placeholder from './pages/Placeholder'
 import Account from './pages/Account'
@@ -13,6 +12,13 @@ import { Login, SignUp } from './pages/AuthPages'
 import { Collections, Devotionals, NewsList, SeriesDetail, TeachingItem, TeachingLibrary, TopicsIndex } from './pages/Teaching'
 import { CourseDetail, CoursePicker, CoursesByLevel } from './pages/Study'
 import { CommunitiesList, EventsList, PeopleList, Stories, TextPage } from './pages/Community'
+import { SavedProvider } from './mystudy/SavedContext'
+import MyStudyHome from './mystudy/MyStudyHome'
+import MyCourses from './mystudy/MyCourses'
+import Deadlines from './mystudy/Deadlines'
+import Notes from './mystudy/Notes'
+import Reading from './mystudy/Reading'
+import Saved from './mystudy/Saved'
 
 const LEVEL_PATHS = ['foundation', 'ba', 'ma', 'gdip', 'mth', 'phd', 'shorter-courses']
 
@@ -20,6 +26,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <SavedProvider>
         <Routes>
           <Route element={<Layout />}>
             <Route index element={<Home />} />
@@ -63,13 +70,19 @@ export default function App() {
             <Route path="/about/news" element={<NewsList />} />
             <Route path="/give" element={<TextPage slug="give" />} />
 
-            {/* Phase 3 (My Study) placeholders + not-found */}
-            {ALL_LEAVES.filter((leaf) => leaf.phase === 3).map((leaf) => (
-              <Route key={leaf.path} path={leaf.path} element={<Placeholder />} />
-            ))}
+            {/* My Study (private, login required) */}
+            <Route path="/my-study" element={<ProtectedRoute><MyStudyHome /></ProtectedRoute>} />
+            <Route path="/my-study/courses" element={<ProtectedRoute><MyCourses /></ProtectedRoute>} />
+            <Route path="/my-study/deadlines" element={<ProtectedRoute><Deadlines /></ProtectedRoute>} />
+            <Route path="/my-study/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
+            <Route path="/my-study/reading" element={<ProtectedRoute><Reading /></ProtectedRoute>} />
+            <Route path="/my-study/saved" element={<ProtectedRoute><Saved /></ProtectedRoute>} />
+
+            {/* Not found */}
             <Route path="*" element={<Placeholder />} />
           </Route>
         </Routes>
+        </SavedProvider>
       </AuthProvider>
     </BrowserRouter>
   )

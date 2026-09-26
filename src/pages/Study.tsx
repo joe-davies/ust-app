@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { useQuery } from '../lib/data'
 import { LEVEL_LABEL, type Course, type CourseLevel } from '../lib/types'
 import { Async, Card, Empty, PageShell, Prose, Tag } from '../components/ui'
+import { SaveButton } from '../mystudy/SavedContext'
 
 const PATH_LEVELS: Record<string, { title: string; intro: string; levels: CourseLevel[] }> = {
   '/study/foundation': { title: 'Foundation courses', intro: 'Start theological study at your own pace.', levels: ['foundation'] },
@@ -85,6 +86,7 @@ export function CourseDetail() {
               <a href={BRAND.enquireUrl} className="rounded border border-union-blue px-5 py-3 font-semibold text-union-blue hover:bg-union-blue/5">
                 Enquire
               </a>
+              <SaveButton type="course" id={c.id} />
             </div>
           </PageShell>
         ) : (

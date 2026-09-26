@@ -38,6 +38,7 @@ export const NAV: NavGroup[] = [
   {
     label: 'My Study',
     items: [
+      { label: 'Overview', path: '/my-study', blurb: 'Your study space.', phase: 3 },
       { label: 'My Courses', path: '/my-study/courses', blurb: 'Your enrolled and saved courses.', phase: 3 },
       { label: 'Deadlines & Calendar', path: '/my-study/deadlines', blurb: 'Assignments and key dates in one place.', phase: 3 },
       { label: 'Notes', path: '/my-study/notes', blurb: 'Your study notes.', phase: 3 },

@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { formatDate, useQuery } from '../lib/data'
 import { KIND_LABEL, type ContentItem, type ContentKind, type Series } from '../lib/types'
 import { Async, Card, Empty, PageShell, Prose, Tag } from '../components/ui'
+import { SaveButton } from '../mystudy/SavedContext'
 
 const fetchItems = () =>
   supabase.from('content_items').select('*').order('published_at', { ascending: false }).limit(300)
@@ -158,6 +159,7 @@ export function TeachingItem() {
                 )}
               </div>
             )}
+            <div className="mb-4"><SaveButton type="content" id={item.id} /></div>
             {item.summary && <p className="mb-4 font-serif text-xl text-slate-700">{item.summary}</p>}
             <Prose text={item.body} />
             {item.topics.length > 0 && (

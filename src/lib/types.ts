@@ -101,3 +101,67 @@ export const LEVEL_LABEL: Record<CourseLevel, string> = {
   short: 'Short course',
   language: 'Biblical language',
 }
+
+// ---- My Study (private per-user data) ----
+export type CourseStatus = 'planned' | 'in-progress' | 'completed'
+export type DeadlineKind = 'assignment' | 'exam' | 'reading' | 'other'
+export type ReadingStatus = 'to-read' | 'reading' | 'done'
+export type SavedType = 'content' | 'course' | 'event'
+
+export interface MyCourse {
+  id: string
+  course_id: string | null
+  title: string
+  status: CourseStatus
+  created_at: string
+}
+
+export interface Deadline {
+  id: string
+  my_course_id: string | null
+  title: string
+  kind: DeadlineKind
+  due_at: string
+  done: boolean
+  notes: string
+}
+
+export interface Note {
+  id: string
+  my_course_id: string | null
+  title: string
+  body: string
+  updated_at: string
+}
+
+export interface ReadingItem {
+  id: string
+  my_course_id: string | null
+  title: string
+  author: string
+  status: ReadingStatus
+}
+
+export interface SavedItem {
+  id: string
+  item_type: SavedType
+  item_id: string
+  created_at: string
+}
+
+export const STATUS_LABEL: Record<CourseStatus, string> = {
+  planned: 'Planned',
+  'in-progress': 'In progress',
+  completed: 'Completed',
+}
+export const KIND_DEADLINE_LABEL: Record<DeadlineKind, string> = {
+  assignment: 'Assignment',
+  exam: 'Exam',
+  reading: 'Reading',
+  other: 'Other',
+}
+export const READING_LABEL: Record<ReadingStatus, string> = {
+  'to-read': 'To read',
+  reading: 'Reading now',
+  done: 'Finished',
+}
