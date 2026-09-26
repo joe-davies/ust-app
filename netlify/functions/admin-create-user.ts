@@ -12,6 +12,7 @@
 //   4. flags the profile so the app forces a password change on first login.
 import { createClient } from '@supabase/supabase-js'
 import { randomInt } from 'node:crypto'
+import { json, requireAdmin, type Deps } from '../lib/admin'
 
 const ALPHABET_UPPER = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
 const ALPHABET_LOWER = 'abcdefghijkmnopqrstuvwxyz'
@@ -31,16 +32,6 @@ export function generateTempPassword(length = 14): string {
   return chars.join('')
 }
 
-export interface Deps {
-  createClient: typeof createClient
-  env: Record<string, string | undefined>
-  now?: () => Date
-  genPassword?: () => string
-}
-
-const json = (status: number, body: Record<string, unknown>) =>
-  new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
-
 // If setup fails after the account was created, remove it so the admin can simply retry
 // (otherwise a half-configured user could skip the forced password change).
 async function rollback(
@@ -56,16 +47,10 @@ async function rollback(
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export async function handle(req: Request, deps: Deps): Promise<Response> {
-  if (req.method !== 'POST') return json(405, { error: 'Method not allowed' })
-
-  const url = deps.env.SUPABASE_URL ?? deps.env.VITE_SUPABASE_URL
-  const serviceKey = deps.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !serviceKey) {
-    return json(500, { error: 'Server is not configured: set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Netlify.' })
-  }
-
-  const token = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '').trim()
-  if (!token) return json(401, { error: 'Not signed in' })
+  // 1. Who is calling, and are they an admin? (checked before anything else is read)
+  const auth = await requireAdmin(req, deps, 'Only administrators can add users')
+  if (auth instanceof Response) return auth
+  const { admin } = auth
 
   let body: Record<string, unknown>
   try {
@@ -80,14 +65,6 @@ export async function handle(req: Request, deps: Deps): Promise<Response> {
   if (!EMAIL_RE.test(email)) return json(400, { error: 'Enter a valid email address' })
   if (!firstName || !lastName) return json(400, { error: 'First and last name are required' })
   if (!['prospective', 'current'].includes(studentType)) return json(400, { error: 'Invalid student type' })
-
-  const admin = deps.createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } })
-
-  // 1. Who is calling, and are they an admin?
-  const { data: caller, error: callerErr } = await admin.auth.getUser(token)
-  if (callerErr || !caller?.user) return json(401, { error: 'Your session has expired. Please log in again.' })
-  const { data: callerProfile } = await admin.from('profiles').select('role').eq('id', caller.user.id).single()
-  if (callerProfile?.role !== 'admin') return json(403, { error: 'Only administrators can add users' })
 
   // 2. Invite: Supabase emails the "Invite user" template, which contains the temporary password.
   const tempPassword = (deps.genPassword ?? generateTempPassword)()

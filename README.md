@@ -55,3 +55,9 @@ One-time setup:
    (Authentication > Rate limits) may need raising.
 The function only runs on Netlify (or locally with `netlify dev`); with plain `npm run dev` the Add user form shows a
 message saying the service is unavailable.
+
+Deleting a user: **Admin > Users > Delete** (asks for confirmation). This calls `netlify/functions/admin-delete-user.ts`, which
+permanently removes the account, their profile and all their notes, deadlines, courses, reading lists and saved items. You
+cannot delete your own account. It uses the same `SUPABASE_SERVICE_ROLE_KEY` as Add user, so no extra setup is needed.
+A deleted person's current login session can remain valid for up to an hour (Supabase's token lifetime), but they have no
+data and can no longer log in.

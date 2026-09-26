@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { supabase } from '../lib/supabase'
+import { callFunction } from '../lib/functions'
 import { useAuth, type Profile, type StudentType } from '../auth/AuthContext'
 
 const inputCls = 'mt-1 w-full rounded border border-slate-300 bg-white px-3 py-2'
@@ -18,6 +19,8 @@ export default function Admin() {
   const [role, setRole] = useState<Profile['role']>('user')
   const [saving, setSaving] = useState(false)
   const [adding, setAdding] = useState(false)
+  const [confirmingId, setConfirmingId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [newFirst, setNewFirst] = useState('')
   const [newLast, setNewLast] = useState('')
   const [newEmail, setNewEmail] = useState('')
@@ -74,24 +77,29 @@ export default function Admin() {
     if (isSelf) await refreshProfile()
   }
 
+  async function deleteUser(u: Profile) {
+    setDeletingId(u.id)
+    setError('')
+    setNotice('')
+    try {
+      await callFunction('admin-delete-user', { user_id: u.id })
+      setNotice(`Deleted ${`${u.first_name} ${u.last_name}`.trim() || u.email} (${u.email}) and all of their data.`)
+      setConfirmingId(null)
+      await load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong')
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   async function addUser(e: FormEvent) {
     e.preventDefault()
     setSaving(true)
     setError('')
     setNotice('')
     try {
-      const { data } = await supabase.auth.getSession()
-      const res = await fetch('/.netlify/functions/admin-create-user', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', authorization: `Bearer ${data.session?.access_token ?? ''}` },
-        body: JSON.stringify({ email: newEmail, first_name: newFirst, last_name: newLast, student_type: newType }),
-      })
-      const isJson = (res.headers.get('content-type') ?? '').includes('application/json')
-      if (!isJson) {
-        throw new Error('The user-creation service is not available here. It only runs on the deployed Netlify site (or with `netlify dev`).')
-      }
-      const body = (await res.json()) as { ok?: boolean; error?: string }
-      if (!res.ok || !body.ok) throw new Error(body.error ?? 'Something went wrong')
+      await callFunction('admin-create-user', { email: newEmail, first_name: newFirst, last_name: newLast, student_type: newType })
       setNotice(`Invitation sent to ${newEmail.trim()}. They must verify their email using the link in that message, then choose their own password.`)
       setAdding(false)
       setNewFirst('')
@@ -215,7 +223,30 @@ export default function Admin() {
                 <td className="p-3 capitalize">{u.student_type}</td>
                 <td className="p-3">{u.role}</td>
                 <td className="p-3 text-right">
-                  <button onClick={() => startEdit(u)} className="rounded border border-slate-300 px-3 py-1 hover:bg-slate-50">Edit</button>
+                  {confirmingId === u.id ? (
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      <span className="max-w-64 text-left text-xs text-red-800">
+                        Permanently delete this account and all their notes, deadlines, courses and saved items? This cannot be undone.
+                      </span>
+                      <button
+                        onClick={() => void deleteUser(u)}
+                        disabled={deletingId === u.id}
+                        className="rounded bg-red-700 px-3 py-1 font-semibold text-white hover:bg-red-800 disabled:opacity-60"
+                      >
+                        {deletingId === u.id ? 'Deleting…' : 'Yes, delete'}
+                      </button>
+                      <button onClick={() => setConfirmingId(null)} className="rounded border border-slate-300 px-3 py-1 hover:bg-slate-50">Cancel</button>
+                    </div>
+                  ) : (
+                    <div className="flex justify-end gap-2">
+                      <button onClick={() => startEdit(u)} className="rounded border border-slate-300 px-3 py-1 hover:bg-slate-50">Edit</button>
+                      {u.id !== session?.user.id && (
+                        <button onClick={() => { setConfirmingId(u.id); setError(''); setNotice('') }} className="rounded border border-red-300 px-3 py-1 text-red-800 hover:bg-red-50">
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}
@@ -223,7 +254,7 @@ export default function Admin() {
         </table>
       </div>
       <p className="mt-4 text-sm text-slate-600">
-        To delete a user or change their email, use Supabase, under Authentication, then Users.
+        To change a user's email address, use Supabase, under Authentication, then Users (and edit the email in the profiles table to match).
       </p>
     </div>
   )

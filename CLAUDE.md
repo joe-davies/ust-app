@@ -19,7 +19,8 @@ wrapped for iOS/Android with Capacitor.
 - `src/pages/` — Home, AuthPages (SignUp, Login), Account, Admin (users), Teaching, Study, Community (events/people/communities/stories/TextPage), Placeholder
 - `src/admin/` — `resources.ts` (config for every editable table), `AdminResource.tsx` (generic list/create/edit/delete), `AdminLayout.tsx` (tabs)
 - `src/lib/` — `supabase.ts`, `data.ts` (`useQuery`, date/slug helpers), `types.ts`
-- `netlify/functions/admin-create-user.ts` — server-side admin user creation (service-role key, env only). Tested with mocks; `tsconfig.netlify.json` typechecks it (`npx tsc -p tsconfig.netlify.json`)
+- `netlify/functions/admin-create-user.ts`, `admin-delete-user.ts` — server-side admin actions (service-role key, env only). Both start with `requireAdmin()` from `netlify/lib/admin.ts` (verifies the token + admin role). Tested with mocks; `tsconfig.netlify.json` typechecks them (`npx tsc -p tsconfig.netlify.json`)
+- `src/lib/functions.ts` — `callFunction()` used by the Admin page to call those functions with the user's token
 - `supabase/email-templates/invite.html` — paste into Supabase's "Invite user" template (verify link + temp password)
 - `src/mystudy/` — My Study (login required): `useOwnRows` CRUD hook, `SavedContext` (+ `SaveButton`), Overview, MyCourses, Deadlines (list + month calendar, includes saved events), Notes, Reading, Saved
 - `src/components/ui.tsx` — PageShell, Async (loading/error), Prose, Card, Tag
@@ -31,8 +32,9 @@ wrapped for iOS/Android with Capacitor.
   grants in migration 0001). `role` can only be changed via SQL / service role.
 - Admin-only tables must use `public.is_admin()` in their RLS policies.
 - Admins edit other users via the `admin_update_profile` RPC (migration 0004), NOT by loosening RLS/column
-  grants on `profiles`. It refuses non-admins and demoting the last admin. Deleting users / changing
-  emails is done in the Supabase dashboard (needs the service key, deliberately not in the browser app).
+  grants on `profiles`. It refuses non-admins and demoting the last admin. Deleting users goes through the
+  `admin-delete-user` function (admin only, never your own account; cascades to profile + all study data via foreign keys).
+  Changing a user's email is done in the Supabase dashboard.
 - All content is database-driven and admin-editable. To add an editable content type: new table in a
   numbered migration (RLS: public read where `published`, `is_admin()` write), an entry in
   `src/admin/resources.ts`, and a public page. Text pages (fees, beliefs, give...) live in `public.pages` by slug.
