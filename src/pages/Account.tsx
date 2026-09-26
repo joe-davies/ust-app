@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth, type StudentType } from '../auth/AuthContext'
 
@@ -44,6 +45,9 @@ export default function Account() {
         <button className="rounded bg-union-blue px-4 py-2 font-semibold text-union-offwhite hover:bg-union-blue-dark">Save</button>
         {msg && <p role="status" className="text-sm text-slate-700">{msg}</p>}
       </form>
+      <p className="mt-6 text-sm text-slate-700">
+        Want to change your password? <Link to="/set-password" className="font-medium text-union-blue-light hover:underline">Set a new password</Link>
+      </p>
     </div>
   )
 }

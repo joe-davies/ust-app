@@ -8,7 +8,7 @@ wrapped for iOS/Android with Capacitor.
 - Vite + React 19 + TypeScript (strict, `erasableSyntaxOnly`: no enums / parameter properties)
 - Tailwind CSS v4 (tokens in `src/index.css` under `@theme`)
 - React Router (`src/App.tsx`)
-- Supabase: auth (passwordless email magic link), Postgres, RLS. Client in `src/lib/supabase.ts`
+- Supabase: auth (email + password; forgot-password emails a link), Postgres, RLS. Client in `src/lib/supabase.ts`
 - vite-plugin-pwa (manifest in `vite.config.ts`)
 - Hosting: Netlify (`netlify.toml`, SPA redirect, Node 22)
 
@@ -19,6 +19,8 @@ wrapped for iOS/Android with Capacitor.
 - `src/pages/` — Home, AuthPages (SignUp, Login), Account, Admin (users), Teaching, Study, Community (events/people/communities/stories/TextPage), Placeholder
 - `src/admin/` — `resources.ts` (config for every editable table), `AdminResource.tsx` (generic list/create/edit/delete), `AdminLayout.tsx` (tabs)
 - `src/lib/` — `supabase.ts`, `data.ts` (`useQuery`, date/slug helpers), `types.ts`
+- `netlify/functions/admin-create-user.ts` — server-side admin user creation (service-role key, env only). Tested with mocks; `tsconfig.netlify.json` typechecks it (`npx tsc -p tsconfig.netlify.json`)
+- `supabase/email-templates/invite.html` — paste into Supabase's "Invite user" template (shows the temp password)
 - `src/mystudy/` — My Study (login required): `useOwnRows` CRUD hook, `SavedContext` (+ `SaveButton`), Overview, MyCourses, Deadlines (list + month calendar, includes saved events), Notes, Reading, Saved
 - `src/components/ui.tsx` — PageShell, Async (loading/error), Prose, Card, Tag
 - `supabase/migrations/` — SQL, run manually in the Supabase SQL editor, in order
@@ -37,6 +39,10 @@ wrapped for iOS/Android with Capacitor.
 - Per-student tables (my_courses, deadlines, notes, reading_items, saved_items; migration 0005) have
   `user_id uuid default auth.uid()` and ONE RLS policy `user_id = auth.uid()` for authenticated only. Never expose
   them to anon and never write a policy that lets one user read another's rows. Client code never sets user_id.
+- The service-role key lives ONLY in Netlify env (`SUPABASE_SERVICE_ROLE_KEY`), never `VITE_`-prefixed, never in client code.
+- Admin-created users: profile flag `must_change_password` (+ `temp_password_expires_at`, 7 days) set by the function; `MustChangeGate`
+  redirects them to `/set-password`; `complete_password_change()` RPC clears it. Expiry/forced change are enforced in the app (a
+  courtesy guard, not a hard boundary). The temp password is passed once in invite metadata and wiped straight after.
 - Body text is plain: paragraphs separated by a blank line (rendered by `Prose`).
 - Replace a placeholder page by adding an explicit `<Route>` before the generated ones in `App.tsx`.
 
@@ -59,11 +65,11 @@ wrapped for iOS/Android with Capacitor.
    admin editors for every table, plus in-app user editing (name, student type, role; migration 0004).
 3. **My Study — DONE:** my courses, deadlines + month calendar, notes, reading lists, saved items (Save buttons on
    teaching, courses, events), overview page. Migration 0005; RLS isolation tested locally.
-4. **Polish — NEXT:** offline, accessibility, Capacitor readiness, code-splitting (bundle is ~530 kB), password login option.
+4. **Polish — NEXT:** offline, accessibility, Capacitor readiness, code-splitting (bundle is ~530 kB). (Password login + admin-created users: DONE, migration 0006.)
 
 ## Decisions made
-- Sign-up fields: first name, last name, email, student type (prospective/current). No password:
-  magic-link login. Adding passwords later is a small change in `AuthPages.tsx`.
+- Sign-up fields: first name, last name, email, password, student type (prospective/current). Login is email + password; there is
+  no magic-link login, "Forgot password? Email me a link" is the fallback (link goes to `/set-password`).
 - Excluded on purpose: separate store (link to UST shop), multi-language sites, collecting
   application data (link to UST's application form).
 - Owner: Joe Davies (sole admin initially; others promoted via SQL).

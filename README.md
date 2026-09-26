@@ -16,7 +16,7 @@ npm run dev
 1. Create a free project at https://supabase.com.
 2. Project Settings > API: copy the **Project URL** and **anon public key** into `.env`.
 3. SQL Editor > New query: run each file in `supabase/migrations/` in order: `0001_profiles.sql`,
-   `0002_content.sql`, `0003_seed.sql` (dummy content; safe to re-run), `0004_admin_users.sql`, then `0005_my_study.sql`.
+   `0002_content.sql`, `0003_seed.sql` (dummy content; safe to re-run), `0004_admin_users.sql`, `0005_my_study.sql`, then `0006_password_flow.sql`.
 4. Authentication > URL Configuration: set **Site URL** to your Netlify URL and add
    `http://localhost:5173/**` and your Netlify URL `/**` under **Redirect URLs**.
 5. Sign up in the app, then make yourself admin (SQL editor):
@@ -28,3 +28,20 @@ npm run dev
 3. Site configuration > Environment variables: add `VITE_SUPABASE_URL` and
    `VITE_SUPABASE_ANON_KEY`.
 4. Deploy. Then add the Netlify URL to Supabase's Redirect URLs (step 4 above).
+
+## Admin-created users (temporary password by email)
+Admins add users under **Admin > Users > Add user**. A Netlify Function
+(`netlify/functions/admin-create-user.ts`) creates the account with Supabase's service-role key and
+Supabase emails the temporary password (through your SMTP). The user must choose their own password on
+first login (`MustChangeGate`, `/set-password`). One-time setup:
+1. Run `0006_password_flow.sql` in the Supabase SQL editor.
+2. Supabase > Authentication > Emails > Templates > **Invite user**: paste `supabase/email-templates/invite.html`.
+3. Netlify > Site configuration > Environment variables, add **`SUPABASE_SERVICE_ROLE_KEY`** (Supabase > Project
+   Settings > API Keys > the `service_role` / secret key). Tick "Contains secret values" and limit the scope to
+   Functions/Runtime. `SUPABASE_URL` is optional (falls back to `VITE_SUPABASE_URL`). Then redeploy.
+   NEVER prefix this key with `VITE_` and never put it in `.env` for the browser app.
+4. Optional: Supabase > Authentication > Sign In / Providers > Email > set minimum password length to 8.
+5. Supabase custom SMTP has its own hourly email limit (Authentication > Rate limits) which you may need to raise.
+The function only runs on Netlify (or locally with `netlify dev`); with plain `npm run dev` the Add user form
+shows a message saying the service is unavailable.
+

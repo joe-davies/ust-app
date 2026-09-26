@@ -1,6 +1,7 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './auth/AuthContext'
 import { ProtectedRoute } from './auth/ProtectedRoute'
+import { MustChangeGate } from './auth/MustChangeGate'
 import { Layout } from './components/Layout'
 import Home from './pages/Home'
 import Placeholder from './pages/Placeholder'
@@ -9,6 +10,7 @@ import Admin from './pages/Admin'
 import AdminLayout from './admin/AdminLayout'
 import AdminResource from './admin/AdminResource'
 import { Login, SignUp } from './pages/AuthPages'
+import SetPassword from './pages/SetPassword'
 import { Collections, Devotionals, NewsList, SeriesDetail, TeachingItem, TeachingLibrary, TopicsIndex } from './pages/Teaching'
 import { CourseDetail, CoursePicker, CoursesByLevel } from './pages/Study'
 import { CommunitiesList, EventsList, PeopleList, Stories, TextPage } from './pages/Community'
@@ -28,10 +30,11 @@ export default function App() {
       <AuthProvider>
         <SavedProvider>
         <Routes>
-          <Route element={<Layout />}>
+          <Route element={<MustChangeGate><Layout /></MustChangeGate>}>
             <Route index element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
+            <Route path="/set-password" element={<ProtectedRoute><SetPassword /></ProtectedRoute>} />
             <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
 
             <Route path="/admin" element={<ProtectedRoute adminOnly><AdminLayout /></ProtectedRoute>}>

@@ -1,12 +1,14 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
-import { Link, Navigate } from 'react-router-dom'
+import { Link, Navigate, useLocation } from 'react-router-dom'
 import { supabase, supabaseConfigured } from '../lib/supabase'
 import { useAuth, type StudentType } from '../auth/AuthContext'
+import { MIN_PASSWORD } from './SetPassword'
 
 const inputCls =
   'mt-1 w-full rounded border border-slate-300 bg-white px-3 py-2 focus:border-union-blue focus:outline-none focus:ring-2 focus:ring-union-blue/30'
 const btnCls =
   'w-full rounded bg-union-blue px-4 py-2.5 font-semibold text-union-offwhite hover:bg-union-blue-dark disabled:opacity-60'
+const linkCls = 'font-medium text-union-blue-light hover:underline'
 
 function Shell({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -24,14 +26,26 @@ function Shell({ title, children }: { title: string; children: ReactNode }) {
   )
 }
 
-function CheckEmail({ email }: { email: string }) {
+function Notice({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <Shell title="Check your email">
-      <p>
-        We sent a secure sign-in link to <strong>{email}</strong>. Open it on this device to continue.
-        You can close this tab.
-      </p>
+    <Shell title={title}>
+      <div className="space-y-3">{children}</div>
     </Shell>
+  )
+}
+
+function PasswordField({ label, value, onChange, autoComplete }: { label: string; value: string; onChange: (v: string) => void; autoComplete: string }) {
+  const [show, setShow] = useState(false)
+  return (
+    <div>
+      <label className="block text-sm font-medium">
+        {label}
+        <input type={show ? 'text' : 'password'} value={value} onChange={(e) => onChange(e.target.value)} className={inputCls} autoComplete={autoComplete} required />
+      </label>
+      <button type="button" onClick={() => setShow((s) => !s)} className="mt-1 text-xs text-slate-600 hover:underline">
+        {show ? 'Hide password' : 'Show password'}
+      </button>
+    </div>
   )
 }
 
@@ -40,28 +54,37 @@ export function SignUp() {
   const [firstName, setFirst] = useState('')
   const [lastName, setLast] = useState('')
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [studentType, setType] = useState<StudentType>('prospective')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const [sent, setSent] = useState(false)
+  const [needsConfirm, setNeedsConfirm] = useState(false)
 
   if (session) return <Navigate to="/account" replace />
-  if (sent) return <CheckEmail email={email} />
+  if (needsConfirm) {
+    return (
+      <Notice title="Check your email">
+        <p>We sent a confirmation link to <strong>{email}</strong>. Open it to activate your account, then log in with your email and password.</p>
+      </Notice>
+    )
+  }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
-    setBusy(true)
     setError('')
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
+    if (password.length < MIN_PASSWORD) return setError(`Your password must be at least ${MIN_PASSWORD} characters.`)
+    setBusy(true)
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
       options: {
-        emailRedirectTo: `${window.location.origin}/account`,
+        emailRedirectTo: `${window.location.origin}/login`,
         data: { first_name: firstName.trim(), last_name: lastName.trim(), student_type: studentType },
       },
     })
     setBusy(false)
-    if (error) setError(error.message)
-    else setSent(true)
+    if (error) return setError(error.message)
+    if (!data.session) setNeedsConfirm(true) // email confirmation is switched on in Supabase
   }
 
   return (
@@ -78,6 +101,8 @@ export function SignUp() {
         <label className="block text-sm font-medium">Email
           <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} autoComplete="email" />
         </label>
+        <PasswordField label="Password" value={password} onChange={setPassword} autoComplete="new-password" />
+        <p className="-mt-2 text-xs text-slate-500">At least {MIN_PASSWORD} characters.</p>
         <fieldset>
           <legend className="text-sm font-medium">I am a…</legend>
           <div className="mt-1 flex gap-4">
@@ -90,9 +115,9 @@ export function SignUp() {
           </div>
         </fieldset>
         {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
-        <button disabled={busy || !supabaseConfigured} className={btnCls}>{busy ? 'Sending…' : 'Email me a sign-in link'}</button>
+        <button disabled={busy || !supabaseConfigured} className={btnCls}>{busy ? 'Creating account…' : 'Create account'}</button>
         <p className="text-sm text-slate-600">
-          Already registered? <Link to="/login" className="font-medium text-union-blue-light hover:underline">Log in</Link>
+          Already registered? <Link to="/login" className={linkCls}>Log in</Link>
         </p>
       </form>
     </Shell>
@@ -101,38 +126,76 @@ export function SignUp() {
 
 export function Login() {
   const { session } = useAuth()
+  const location = useLocation()
+  const from = (location.state as { from?: string } | null)?.from ?? '/my-study'
+  const [mode, setMode] = useState<'login' | 'forgot'>('login')
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [sent, setSent] = useState(false)
 
-  if (session) return <Navigate to="/account" replace />
-  if (sent) return <CheckEmail email={email} />
+  if (session) return <Navigate to={from} replace />
 
-  async function onSubmit(e: FormEvent) {
+  async function onLogin(e: FormEvent) {
     e.preventDefault()
     setBusy(true)
     setError('')
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { shouldCreateUser: false, emailRedirectTo: `${window.location.origin}/account` },
-    })
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
     setBusy(false)
-    if (error) setError(error.message.includes('not allowed') ? 'No account found for that email. Please sign up first.' : error.message)
+    if (!error) return
+    if (/invalid login/i.test(error.message)) setError('Incorrect email or password. If you have forgotten it, use “Forgot password?” below.')
+    else if (/not confirmed/i.test(error.message)) setError('Please confirm your email address first. Check your inbox for the confirmation link.')
+    else setError(error.message)
+  }
+
+  async function onForgot(e: FormEvent) {
+    e.preventDefault()
+    setBusy(true)
+    setError('')
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${window.location.origin}/set-password` })
+    setBusy(false)
+    if (error) setError(error.message)
     else setSent(true)
+  }
+
+  if (mode === 'forgot') {
+    if (sent) {
+      return (
+        <Notice title="Check your email">
+          <p>If an account exists for <strong>{email}</strong>, we have sent a link to choose a new password.</p>
+          <button className={linkCls} onClick={() => { setMode('login'); setSent(false) }}>Back to log in</button>
+        </Notice>
+      )
+    }
+    return (
+      <Shell title="Forgot password?">
+        <form onSubmit={onForgot} className="space-y-4">
+          <p className="text-sm text-slate-700">Enter your email and we will send you a link to choose a new password.</p>
+          <label className="block text-sm font-medium">Email
+            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} autoComplete="email" />
+          </label>
+          {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+          <button disabled={busy || !supabaseConfigured} className={btnCls}>{busy ? 'Sending…' : 'Email me a link'}</button>
+          <button type="button" className={`${linkCls} text-sm`} onClick={() => { setMode('login'); setError('') }}>Back to log in</button>
+        </form>
+      </Shell>
+    )
   }
 
   return (
     <Shell title="Log in">
-      <form onSubmit={onSubmit} className="space-y-4">
+      <form onSubmit={onLogin} className="space-y-4">
         <label className="block text-sm font-medium">Email
           <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} autoComplete="email" />
         </label>
+        <PasswordField label="Password" value={password} onChange={setPassword} autoComplete="current-password" />
         {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
-        <button disabled={busy || !supabaseConfigured} className={btnCls}>{busy ? 'Sending…' : 'Email me a sign-in link'}</button>
-        <p className="text-sm text-slate-600">
-          New here? <Link to="/signup" className="font-medium text-union-blue-light hover:underline">Create an account</Link>
-        </p>
+        <button disabled={busy || !supabaseConfigured} className={btnCls}>{busy ? 'Logging in…' : 'Log in'}</button>
+        <div className="flex flex-wrap justify-between gap-2 text-sm text-slate-600">
+          <button type="button" className={linkCls} onClick={() => { setMode('forgot'); setError('') }}>Forgot password? Email me a link</button>
+          <span>New here? <Link to="/signup" className={linkCls}>Create an account</Link></span>
+        </div>
       </form>
     </Shell>
   )

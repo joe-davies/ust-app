@@ -11,6 +11,8 @@ export interface Profile {
   last_name: string
   student_type: StudentType
   role: 'user' | 'admin'
+  must_change_password?: boolean
+  temp_password_expires_at?: string | null
 }
 
 interface AuthState {

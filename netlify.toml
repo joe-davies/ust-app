@@ -5,7 +5,12 @@
 [build.environment]
   NODE_VERSION = "22"
 
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
 # Single-page app: send every path to index.html so client-side routes work.
+# (Function URLs under /.netlify/functions/ are handled before this rule.)
 [[redirects]]
   from = "/*"
   to = "/index.html"

@@ -17,6 +17,11 @@ export default function Admin() {
   const [type, setType] = useState<StudentType>('prospective')
   const [role, setRole] = useState<Profile['role']>('user')
   const [saving, setSaving] = useState(false)
+  const [adding, setAdding] = useState(false)
+  const [newFirst, setNewFirst] = useState('')
+  const [newLast, setNewLast] = useState('')
+  const [newEmail, setNewEmail] = useState('')
+  const [newType, setNewType] = useState<StudentType>('prospective')
 
   const load = useCallback(async () => {
     const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false })
@@ -69,6 +74,73 @@ export default function Admin() {
     if (isSelf) await refreshProfile()
   }
 
+  async function addUser(e: FormEvent) {
+    e.preventDefault()
+    setSaving(true)
+    setError('')
+    setNotice('')
+    try {
+      const { data } = await supabase.auth.getSession()
+      const res = await fetch('/.netlify/functions/admin-create-user', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${data.session?.access_token ?? ''}` },
+        body: JSON.stringify({ email: newEmail, first_name: newFirst, last_name: newLast, student_type: newType }),
+      })
+      const isJson = (res.headers.get('content-type') ?? '').includes('application/json')
+      if (!isJson) {
+        throw new Error('The user-creation service is not available here. It only runs on the deployed Netlify site (or with `netlify dev`).')
+      }
+      const body = (await res.json()) as { ok?: boolean; error?: string }
+      if (!res.ok || !body.ok) throw new Error(body.error ?? 'Something went wrong')
+      setNotice(`Invitation sent to ${newEmail.trim()}. They will be asked to choose a new password the first time they log in.`)
+      setAdding(false)
+      setNewFirst('')
+      setNewLast('')
+      setNewEmail('')
+      setNewType('prospective')
+      await load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (adding) {
+    return (
+      <form onSubmit={addUser} className="space-y-4 rounded-lg bg-white p-6 shadow-sm ring-1 ring-black/5">
+        <h2 className="text-xl font-bold">Add user</h2>
+        <p className="text-sm text-slate-600">
+          We will email them a temporary password. They must choose their own password the first time they log in. The temporary password expires after 7 days.
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block text-sm font-medium">First name
+            <input required value={newFirst} onChange={(e) => setNewFirst(e.target.value)} className={inputCls} />
+          </label>
+          <label className="block text-sm font-medium">Last name
+            <input required value={newLast} onChange={(e) => setNewLast(e.target.value)} className={inputCls} />
+          </label>
+        </div>
+        <label className="block text-sm font-medium">Email
+          <input type="email" required value={newEmail} onChange={(e) => setNewEmail(e.target.value)} className={inputCls} />
+        </label>
+        <label className="block text-sm font-medium">Student type
+          <select value={newType} onChange={(e) => setNewType(e.target.value as StudentType)} className={inputCls}>
+            <option value="prospective">Prospective student</option>
+            <option value="current">Current student</option>
+          </select>
+        </label>
+        {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+        <div className="flex gap-3">
+          <button disabled={saving} className="rounded bg-union-blue px-4 py-2 font-semibold text-union-offwhite hover:bg-union-blue-dark disabled:opacity-60">
+            {saving ? 'Sending…' : 'Create and email invitation'}
+          </button>
+          <button type="button" onClick={() => { setAdding(false); setError('') }} className="rounded border border-slate-300 px-4 py-2 font-medium hover:bg-slate-50">Cancel</button>
+        </div>
+      </form>
+    )
+  }
+
   if (editing) {
     return (
       <form onSubmit={save} className="space-y-4 rounded-lg bg-white p-6 shadow-sm ring-1 ring-black/5">
@@ -113,8 +185,15 @@ export default function Admin() {
 
   return (
     <div>
-      <h2 className="text-xl font-bold">Users</h2>
-      <p className="mt-1 text-slate-600">Everyone who has signed up. Click Edit to change a name, student type or role.</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold">Users</h2>
+          <p className="mt-1 text-slate-600">Everyone who has signed up. Click Edit to change a name, student type or role.</p>
+        </div>
+        <button onClick={() => { setAdding(true); setError(''); setNotice('') }} className="rounded bg-union-blue px-4 py-2 text-sm font-semibold text-union-offwhite hover:bg-union-blue-dark">
+          Add user
+        </button>
+      </div>
       {notice && <p role="status" className="mt-3 text-sm text-green-800">{notice}</p>}
       {error && <p role="alert" className="mt-3 text-red-700">{error}</p>}
       <div className="mt-6 overflow-x-auto rounded-lg bg-white shadow-sm ring-1 ring-black/5">
@@ -131,7 +210,7 @@ export default function Admin() {
           <tbody>
             {users.map((u) => (
               <tr key={u.id} className="border-t border-black/5">
-                <td className="p-3">{u.first_name} {u.last_name}{u.id === session?.user.id && <span className="ml-2 text-xs text-slate-500">(you)</span>}</td>
+                <td className="p-3">{u.first_name} {u.last_name}{u.id === session?.user.id && <span className="ml-2 text-xs text-slate-500">(you)</span>}{u.must_change_password && <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-900">Invited, not yet signed in</span>}</td>
                 <td className="p-3">{u.email}</td>
                 <td className="p-3 capitalize">{u.student_type}</td>
                 <td className="p-3">{u.role}</td>
