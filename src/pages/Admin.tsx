@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Profile } from '../auth/AuthContext'
 
-// Phase 1 admin: view users and promote/demote admins.
-// Phase 2 adds content editors (articles, courses, events, ...).
+// Users list (rendered inside AdminLayout). Content editors live in src/admin/.
 export default function Admin() {
   const [users, setUsers] = useState<Profile[]>([])
   const [error, setError] = useState('')
@@ -19,9 +18,9 @@ export default function Admin() {
   }, [])
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-12">
-      <h1 className="text-3xl font-bold">Admin</h1>
-      <p className="mt-1 text-slate-600">Users. Content editing arrives in Phase 2.</p>
+    <div>
+      <h2 className="text-xl font-bold">Users</h2>
+      <p className="mt-1 text-slate-600">Everyone who has signed up.</p>
       {error && <p role="alert" className="mt-4 text-red-700">{error}</p>}
       <div className="mt-6 overflow-x-auto rounded-lg bg-white shadow-sm ring-1 ring-black/5">
         <table className="w-full text-left text-sm">

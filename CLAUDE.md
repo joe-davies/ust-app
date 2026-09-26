@@ -16,7 +16,10 @@ wrapped for iOS/Android with Capacitor.
 - `src/nav.ts` — single source of truth for navigation AND placeholder routes
 - `src/brand.ts` — logo URL, name, external apply/enquire links
 - `src/auth/` — `AuthContext` (session + profile + isAdmin), `ProtectedRoute` (`adminOnly` prop)
-- `src/pages/` — Home, AuthPages (SignUp, Login), Account, Admin, Placeholder
+- `src/pages/` — Home, AuthPages (SignUp, Login), Account, Admin (users), Teaching, Study, Community (events/people/communities/stories/TextPage), Placeholder
+- `src/admin/` — `resources.ts` (config for every editable table), `AdminResource.tsx` (generic list/create/edit/delete), `AdminLayout.tsx` (tabs)
+- `src/lib/` — `supabase.ts`, `data.ts` (`useQuery`, date/slug helpers), `types.ts`
+- `src/components/ui.tsx` — PageShell, Async (loading/error), Prose, Card, Tag
 - `supabase/migrations/` — SQL, run manually in the Supabase SQL editor, in order
 
 ## Conventions
@@ -24,8 +27,10 @@ wrapped for iOS/Android with Capacitor.
 - Users can only update `first_name`, `last_name`, `student_type` on their own profile (column
   grants in migration 0001). `role` can only be changed via SQL / service role.
 - Admin-only tables must use `public.is_admin()` in their RLS policies.
-- Content must be database-driven and admin-editable; no hard-coded content in components once
-  a section reaches Phase 2 (Home currently uses static dummy arrays).
+- All content is database-driven and admin-editable. To add an editable content type: new table in a
+  numbered migration (RLS: public read where `published`, `is_admin()` write), an entry in
+  `src/admin/resources.ts`, and a public page. Text pages (fees, beliefs, give...) live in `public.pages` by slug.
+- Body text is plain: paragraphs separated by a blank line (rendered by `Prose`).
 - Replace a placeholder page by adding an explicit `<Route>` before the generated ones in `App.tsx`.
 
 ## Brand caveats
@@ -38,11 +43,12 @@ wrapped for iOS/Android with Capacitor.
 ## Phases
 1. **Foundation — DONE:** scaffold, branding, layout/nav, sign-up + login, profiles, admin role,
    admin user list, Netlify config.
-2. **Content + admin — NEXT:** tables + seed of dummy content (articles, series, devotionals,
-   videos, podcasts, Q&As, topics, courses, events, news, faculty, learning communities,
-   testimonials), public pages reading from DB, admin CRUD forms, course picker quiz.
-3. **My Study:** enrolled courses, deadlines/calendar, notes, reading lists, saved items.
-4. **Polish:** search, offline, accessibility, Capacitor readiness, Home wired to DB.
+2. **Content + admin — DONE (untested against live Supabase until migrations 0002/0003 are run):**
+   tables + dummy seed, teaching library (search, topics, scripture, series), courses + course
+   picker quiz, events, faculty, Learning Communities, student stories, text pages, Home from DB,
+   admin editors for every table.
+3. **My Study — NEXT:** enrolled courses, deadlines/calendar, notes, reading lists, saved items.
+4. **Polish:** offline, accessibility, Capacitor readiness, code-splitting (bundle is ~530 kB), password login option.
 
 ## Decisions made
 - Sign-up fields: first name, last name, email, student type (prospective/current). No password:
