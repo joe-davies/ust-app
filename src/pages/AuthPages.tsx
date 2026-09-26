@@ -1,8 +1,8 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
-import { Link, Navigate, useLocation } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import { supabase, supabaseConfigured } from '../lib/supabase'
-import { useAuth, type StudentType } from '../auth/AuthContext'
-import { MIN_PASSWORD } from './SetPassword'
+import { useAuth } from '../auth/AuthContext'
+import { BRAND } from '../brand'
 
 const inputCls =
   'mt-1 w-full rounded border border-slate-300 bg-white px-3 py-2 focus:border-union-blue focus:outline-none focus:ring-2 focus:ring-union-blue/30'
@@ -46,81 +46,6 @@ function PasswordField({ label, value, onChange, autoComplete }: { label: string
         {show ? 'Hide password' : 'Show password'}
       </button>
     </div>
-  )
-}
-
-export function SignUp() {
-  const { session } = useAuth()
-  const [firstName, setFirst] = useState('')
-  const [lastName, setLast] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [studentType, setType] = useState<StudentType>('prospective')
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
-  const [needsConfirm, setNeedsConfirm] = useState(false)
-
-  if (session) return <Navigate to="/account" replace />
-  if (needsConfirm) {
-    return (
-      <Notice title="Check your email">
-        <p>We sent a confirmation link to <strong>{email}</strong>. Open it to activate your account, then log in with your email and password.</p>
-      </Notice>
-    )
-  }
-
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault()
-    setError('')
-    if (password.length < MIN_PASSWORD) return setError(`Your password must be at least ${MIN_PASSWORD} characters.`)
-    setBusy(true)
-    const { data, error } = await supabase.auth.signUp({
-      email: email.trim(),
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/login`,
-        data: { first_name: firstName.trim(), last_name: lastName.trim(), student_type: studentType },
-      },
-    })
-    setBusy(false)
-    if (error) return setError(error.message)
-    if (!data.session) setNeedsConfirm(true) // email confirmation is switched on in Supabase
-  }
-
-  return (
-    <Shell title="Create your account">
-      <form onSubmit={onSubmit} className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
-          <label className="block text-sm font-medium">First name
-            <input required value={firstName} onChange={(e) => setFirst(e.target.value)} className={inputCls} autoComplete="given-name" />
-          </label>
-          <label className="block text-sm font-medium">Last name
-            <input required value={lastName} onChange={(e) => setLast(e.target.value)} className={inputCls} autoComplete="family-name" />
-          </label>
-        </div>
-        <label className="block text-sm font-medium">Email
-          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} autoComplete="email" />
-        </label>
-        <PasswordField label="Password" value={password} onChange={setPassword} autoComplete="new-password" />
-        <p className="-mt-2 text-xs text-slate-500">At least {MIN_PASSWORD} characters.</p>
-        <fieldset>
-          <legend className="text-sm font-medium">I am a…</legend>
-          <div className="mt-1 flex gap-4">
-            {(['prospective', 'current'] as const).map((t) => (
-              <label key={t} className="flex items-center gap-2 text-sm">
-                <input type="radio" name="student_type" checked={studentType === t} onChange={() => setType(t)} />
-                {t === 'prospective' ? 'Prospective student' : 'Current student'}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-        {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
-        <button disabled={busy || !supabaseConfigured} className={btnCls}>{busy ? 'Creating account…' : 'Create account'}</button>
-        <p className="text-sm text-slate-600">
-          Already registered? <Link to="/login" className={linkCls}>Log in</Link>
-        </p>
-      </form>
-    </Shell>
   )
 }
 
@@ -194,7 +119,7 @@ export function Login() {
         <button disabled={busy || !supabaseConfigured} className={btnCls}>{busy ? 'Logging in…' : 'Log in'}</button>
         <div className="flex flex-wrap justify-between gap-2 text-sm text-slate-600">
           <button type="button" className={linkCls} onClick={() => { setMode('forgot'); setError('') }}>Forgot password? Email me a link</button>
-          <span>New here? <Link to="/signup" className={linkCls}>Create an account</Link></span>
+          <span>No account? Accounts are created by our team. <a href={BRAND.enquireUrl} className={linkCls}>Enquire</a></span>
         </div>
       </form>
     </Shell>

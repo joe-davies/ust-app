@@ -29,19 +29,27 @@ npm run dev
    `VITE_SUPABASE_ANON_KEY`.
 4. Deploy. Then add the Netlify URL to Supabase's Redirect URLs (step 4 above).
 
-## Admin-created users (temporary password by email)
-Admins add users under **Admin > Users > Add user**. A Netlify Function
-(`netlify/functions/admin-create-user.ts`) creates the account with Supabase's service-role key and
-Supabase emails the temporary password (through your SMTP). The user must choose their own password on
-first login (`MustChangeGate`, `/set-password`). One-time setup:
+## Accounts: invite-only, with email verification
+There is **no public sign-up**. Only admins create accounts (**Admin > Users > Add user**). A Netlify Function
+(`netlify/functions/admin-create-user.ts`) creates the account with Supabase's service-role key (checking the caller is
+an admin) and Supabase emails an invitation through your SMTP containing a **"Verify my email" link** and a temporary
+password. The person cannot use the app until they have (1) verified their email and (2) chosen their own password
+(`MustChangeGate`, `/set-password`). Clicking the link verifies them, signs them in and takes them to choose a password.
+The temporary password is a fallback (e.g. an email scanner used up the link): it works only once the email is verified.
+
+One-time setup:
 1. Run `0006_password_flow.sql` in the Supabase SQL editor.
 2. Supabase > Authentication > Emails > Templates > **Invite user**: paste `supabase/email-templates/invite.html`.
-3. Netlify > Site configuration > Environment variables, add **`SUPABASE_SERVICE_ROLE_KEY`** (Supabase > Project
+3. Supabase > Authentication > **Sign In / Providers** > **User Signups**: turn **"Allow new users to sign up" OFF**.
+   This is what actually stops the public from creating accounts (the app no longer has a sign-up page, but the
+   Supabase API would still accept sign-ups if this stays on). Admin invitations still work.
+4. Supabase > Authentication > Sign In / Providers > **Email**: keep **"Confirm email" ON** so unverified emails cannot log in.
+5. Netlify > Site configuration > Environment variables: add **`SUPABASE_SERVICE_ROLE_KEY`** (Supabase > Project
    Settings > API Keys > the `service_role` / secret key). Tick "Contains secret values" and limit the scope to
    Functions/Runtime. `SUPABASE_URL` is optional (falls back to `VITE_SUPABASE_URL`). Then redeploy.
    NEVER prefix this key with `VITE_` and never put it in `.env` for the browser app.
-4. Optional: Supabase > Authentication > Sign In / Providers > Email > set minimum password length to 8.
-5. Supabase custom SMTP has its own hourly email limit (Authentication > Rate limits) which you may need to raise.
-The function only runs on Netlify (or locally with `netlify dev`); with plain `npm run dev` the Add user form
-shows a message saying the service is unavailable.
-
+6. Supabase Authentication > URL Configuration: your Netlify address must be in **Redirect URLs** (`https://your-site/**`).
+7. Optional: set minimum password length to 8 (Sign In / Providers > Email). Supabase's custom-SMTP hourly email limit
+   (Authentication > Rate limits) may need raising.
+The function only runs on Netlify (or locally with `netlify dev`); with plain `npm run dev` the Add user form shows a
+message saying the service is unavailable.

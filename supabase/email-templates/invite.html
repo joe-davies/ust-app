@@ -1,16 +1,23 @@
 <!-- Paste into Supabase: Authentication > Emails > Templates > "Invite user".
-     Subject suggestion: Your Union School of Theology account
-     Do NOT include {{ .ConfirmationURL }}: users log in with the temporary password below. -->
+     Subject suggestion: Verify your Union School of Theology account -->
 <h2>Welcome to Union School of Theology</h2>
 <p>Hi {{ .Data.first_name }},</p>
-<p>An administrator has created an account for you.</p>
+<p>An administrator has created an account for you. Please verify your email address to activate it:</p>
+<p>
+  <a href="{{ .ConfirmationURL }}"
+     style="display:inline-block;background:#1b3a6b;color:#ffffff;padding:12px 20px;border-radius:4px;text-decoration:none;font-weight:bold">
+    Verify my email
+  </a>
+</p>
+<p>The link signs you in and asks you to choose your own password.</p>
+<hr />
+<p>
+  <strong>If the button does not work</strong> (some email programs open links automatically and use them up),
+  first make sure you have clicked it once, then log in at <a href="{{ .SiteURL }}/login">{{ .SiteURL }}/login</a> with:
+</p>
 <p>
   <strong>Email:</strong> {{ .Email }}<br />
   <strong>Temporary password:</strong> <code style="font-size:16px">{{ .Data.temp_password }}</code>
 </p>
-<p>
-  Sign in at <a href="{{ .SiteURL }}/login">{{ .SiteURL }}/login</a>.
-  You will be asked to choose your own password straight away.
-  The temporary password expires after 7 days.
-</p>
+<p>You will be asked to choose your own password straight away. The temporary password expires after 7 days.</p>
 <p>If you were not expecting this email, you can ignore it.</p>

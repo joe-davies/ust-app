@@ -20,7 +20,7 @@ wrapped for iOS/Android with Capacitor.
 - `src/admin/` — `resources.ts` (config for every editable table), `AdminResource.tsx` (generic list/create/edit/delete), `AdminLayout.tsx` (tabs)
 - `src/lib/` — `supabase.ts`, `data.ts` (`useQuery`, date/slug helpers), `types.ts`
 - `netlify/functions/admin-create-user.ts` — server-side admin user creation (service-role key, env only). Tested with mocks; `tsconfig.netlify.json` typechecks it (`npx tsc -p tsconfig.netlify.json`)
-- `supabase/email-templates/invite.html` — paste into Supabase's "Invite user" template (shows the temp password)
+- `supabase/email-templates/invite.html` — paste into Supabase's "Invite user" template (verify link + temp password)
 - `src/mystudy/` — My Study (login required): `useOwnRows` CRUD hook, `SavedContext` (+ `SaveButton`), Overview, MyCourses, Deadlines (list + month calendar, includes saved events), Notes, Reading, Saved
 - `src/components/ui.tsx` — PageShell, Async (loading/error), Prose, Card, Tag
 - `supabase/migrations/` — SQL, run manually in the Supabase SQL editor, in order
@@ -40,6 +40,9 @@ wrapped for iOS/Android with Capacitor.
   `user_id uuid default auth.uid()` and ONE RLS policy `user_id = auth.uid()` for authenticated only. Never expose
   them to anon and never write a policy that lets one user read another's rows. Client code never sets user_id.
 - The service-role key lives ONLY in Netlify env (`SUPABASE_SERVICE_ROLE_KEY`), never `VITE_`-prefixed, never in client code.
+- ACCOUNTS ARE INVITE-ONLY. There is no sign-up page (`/signup` redirects to `/login`); "Allow new users to sign up" must stay OFF in
+  Supabase. The function does NOT set `email_confirm`: users verify via the invitation link (Supabase "Confirm email" stays ON), and
+  `MustChangeGate` also refuses sessions with no `email_confirmed_at`.
 - Admin-created users: profile flag `must_change_password` (+ `temp_password_expires_at`, 7 days) set by the function; `MustChangeGate`
   redirects them to `/set-password`; `complete_password_change()` RPC clears it. Expiry/forced change are enforced in the app (a
   courtesy guard, not a hard boundary). The temp password is passed once in invite metadata and wiped straight after.
@@ -68,8 +71,8 @@ wrapped for iOS/Android with Capacitor.
 4. **Polish — NEXT:** offline, accessibility, Capacitor readiness, code-splitting (bundle is ~530 kB). (Password login + admin-created users: DONE, migration 0006.)
 
 ## Decisions made
-- Sign-up fields: first name, last name, email, password, student type (prospective/current). Login is email + password; there is
-  no magic-link login, "Forgot password? Email me a link" is the fallback (link goes to `/set-password`).
+- Admins create users (first name, last name, email, student type). Login is email + password; there is no magic-link login and no
+  public sign-up. "Forgot password? Email me a link" is the fallback (link goes to `/set-password`).
 - Excluded on purpose: separate store (link to UST shop), multi-language sites, collecting
   application data (link to UST's application form).
 - Owner: Joe Davies (sole admin initially; others promoted via SQL).

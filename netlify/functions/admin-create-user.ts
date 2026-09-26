@@ -4,9 +4,11 @@
 // which must NEVER be exposed to the browser. It:
 //   1. verifies the caller's access token and that they are an admin,
 //   2. invites the user (Supabase sends the "Invite user" email through YOUR configured SMTP;
-//      the template shows {{ .Data.temp_password }}),
-//   3. sets the password, confirms the email and immediately wipes the temporary password
-//      from the user's metadata so it is not stored in readable form,
+//      the template has a "Verify my email" link ({{ .ConfirmationURL }}) plus the temporary
+//      password {{ .Data.temp_password }}),
+//   3. sets the temporary password (but does NOT confirm the email: the user is verified only
+//      when they click the link) and immediately wipes the temporary password from the user's
+//      metadata so it is not stored in readable form,
 //   4. flags the profile so the app forces a password change on first login.
 import { createClient } from '@supabase/supabase-js'
 import { randomInt } from 'node:crypto'
@@ -81,7 +83,7 @@ export async function handle(req: Request, deps: Deps): Promise<Response> {
   const userData = { first_name: firstName, last_name: lastName, student_type: studentType }
   const { data: invited, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(email, {
     data: { ...userData, temp_password: tempPassword },
-    redirectTo: `${origin}/login`,
+    redirectTo: `${origin}/set-password`,
   })
   if (inviteErr || !invited?.user) {
     const msg = inviteErr?.message ?? 'Could not create the user'
@@ -92,10 +94,10 @@ export async function handle(req: Request, deps: Deps): Promise<Response> {
   }
   const userId = invited.user.id
 
-  // 3. Set the real password, confirm the email, and wipe the temp password from metadata.
+  // 3. Set the temporary password and wipe it from metadata. The email is left UNCONFIRMED: the
+  //    person verifies it by clicking the link in the invitation (which also signs them in).
   const { error: updateErr } = await admin.auth.admin.updateUserById(userId, {
     password: tempPassword,
-    email_confirm: true,
     user_metadata: { ...userData, temp_password: null },
   })
   if (updateErr) {

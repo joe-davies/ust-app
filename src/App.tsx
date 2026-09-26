@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './auth/AuthContext'
 import { ProtectedRoute } from './auth/ProtectedRoute'
 import { MustChangeGate } from './auth/MustChangeGate'
@@ -9,7 +9,7 @@ import Account from './pages/Account'
 import Admin from './pages/Admin'
 import AdminLayout from './admin/AdminLayout'
 import AdminResource from './admin/AdminResource'
-import { Login, SignUp } from './pages/AuthPages'
+import { Login } from './pages/AuthPages'
 import SetPassword from './pages/SetPassword'
 import { Collections, Devotionals, NewsList, SeriesDetail, TeachingItem, TeachingLibrary, TopicsIndex } from './pages/Teaching'
 import { CourseDetail, CoursePicker, CoursesByLevel } from './pages/Study'
@@ -33,7 +33,7 @@ export default function App() {
           <Route element={<MustChangeGate><Layout /></MustChangeGate>}>
             <Route index element={<Home />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<SignUp />} />
+            <Route path="/signup" element={<Navigate to="/login" replace />} />
             <Route path="/set-password" element={<ProtectedRoute><SetPassword /></ProtectedRoute>} />
             <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
 

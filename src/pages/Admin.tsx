@@ -92,7 +92,7 @@ export default function Admin() {
       }
       const body = (await res.json()) as { ok?: boolean; error?: string }
       if (!res.ok || !body.ok) throw new Error(body.error ?? 'Something went wrong')
-      setNotice(`Invitation sent to ${newEmail.trim()}. They will be asked to choose a new password the first time they log in.`)
+      setNotice(`Invitation sent to ${newEmail.trim()}. They must verify their email using the link in that message, then choose their own password.`)
       setAdding(false)
       setNewFirst('')
       setNewLast('')
@@ -111,7 +111,7 @@ export default function Admin() {
       <form onSubmit={addUser} className="space-y-4 rounded-lg bg-white p-6 shadow-sm ring-1 ring-black/5">
         <h2 className="text-xl font-bold">Add user</h2>
         <p className="text-sm text-slate-600">
-          We will email them a temporary password. They must choose their own password the first time they log in. The temporary password expires after 7 days.
+          We will email them an invitation with a link to verify their email address and a temporary password. They cannot log in until they have verified their email, and they must then choose their own password. The temporary password expires after 7 days.
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block text-sm font-medium">First name

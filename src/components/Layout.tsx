@@ -11,13 +11,6 @@ function AccountLinks({ onNavigate }: { onNavigate?: () => void }) {
     return (
       <>
         <Link to="/login" onClick={onNavigate} className={linkCls}>Log in</Link>
-        <Link
-          to="/signup"
-          onClick={onNavigate}
-          className="rounded bg-union-offwhite px-3 py-2 text-sm font-semibold text-union-blue hover:bg-white"
-        >
-          Sign up
-        </Link>
       </>
     )
   }
