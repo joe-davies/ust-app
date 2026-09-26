@@ -42,7 +42,7 @@ export function Layout() {
       <header className="bg-union-blue text-union-offwhite">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
           <Link to="/" onClick={close} aria-label={`${BRAND.name} home`}>
-            <img src={BRAND.logoUrl} alt={BRAND.name} className="h-10 w-auto" />
+            <img src={BRAND.logoUrl} alt={BRAND.name} className="h-12 w-auto brightness-0 invert" />
           </Link>
 
           <nav aria-label="Main" className="hidden items-center gap-1 xl:flex">
@@ -108,7 +108,7 @@ export function Layout() {
       <footer className="bg-union-blue-dark text-union-offwhite">
         <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 md:grid-cols-3">
           <div>
-            <img src={BRAND.logoUrl} alt={BRAND.name} className="mb-3 h-10 w-auto" />
+            <img src={BRAND.logoUrl} alt={BRAND.name} className="mb-3 h-12 w-auto brightness-0 invert" />
             <p className="text-sm opacity-80">{BRAND.tagline}.</p>
           </div>
           <div className="text-sm">

@@ -35,6 +35,9 @@ wrapped for iOS/Android with Capacitor.
 
 ## Brand caveats
 - Colours in `src/index.css` are APPROXIMATE, not from official guidelines. Fix them there.
+- The logo PNG is transparent and its lower text is mid-blue, so on the dark blue header/footer it is
+  rendered solid white via Tailwind `brightness-0 invert` (Layout.tsx). Remove those classes if you
+  switch to an official white/reversed logo file.
 - Logo is hotlinked from UST's Squarespace CDN. Better: save the official file to `public/` and
   point `BRAND.logoUrl` at it.
 - PWA icon is a placeholder "U" SVG (`public/icon.svg`); replace with official icon
