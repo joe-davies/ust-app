@@ -28,3 +28,7 @@ $$;
 
 revoke all on function public.complete_password_change() from public, anon;
 grant execute on function public.complete_password_change() to authenticated;
+
+-- Make the API notice the new columns immediately (otherwise Supabase can report
+-- "Could not find the column ... in the schema cache" until it refreshes).
+notify pgrst, 'reload schema';

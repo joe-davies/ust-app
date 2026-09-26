@@ -38,7 +38,9 @@ password. The person cannot use the app until they have (1) verified their email
 The temporary password is a fallback (e.g. an email scanner used up the link): it works only once the email is verified.
 
 One-time setup:
-1. Run `0006_password_flow.sql` in the Supabase SQL editor.
+1. Run `0006_password_flow.sql` in the Supabase SQL editor (**before** using Add user; it ends with `notify pgrst, 'reload schema'`).
+   If Add user says "Could not find the 'must_change_password' column ... in the schema cache", run that file, then
+   `notify pgrst, 'reload schema';`. If the account was already created, the function now removes it so you can retry.
 2. Supabase > Authentication > Emails > Templates > **Invite user**: paste `supabase/email-templates/invite.html`.
 3. Supabase > Authentication > **Sign In / Providers** > **User Signups**: turn **"Allow new users to sign up" OFF**.
    This is what actually stops the public from creating accounts (the app no longer has a sign-up page, but the

@@ -41,6 +41,18 @@ export interface Deps {
 const json = (status: number, body: Record<string, unknown>) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
 
+// If setup fails after the account was created, remove it so the admin can simply retry
+// (otherwise a half-configured user could skip the forced password change).
+async function rollback(
+  admin: { auth: { admin: { deleteUser: (id: string) => PromiseLike<{ error: { message: string } | null }> } } },
+  userId: string,
+): Promise<string> {
+  const { error } = await admin.auth.admin.deleteUser(userId)
+  return error
+    ? `The account was created but could not be removed automatically: delete it in Supabase (Authentication > Users) before retrying. (${error.message})`
+    : 'Nothing was created, so you can try again. (The email that was already sent will no longer work.)'
+}
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export async function handle(req: Request, deps: Deps): Promise<Response> {
@@ -101,7 +113,10 @@ export async function handle(req: Request, deps: Deps): Promise<Response> {
     user_metadata: { ...userData, temp_password: null },
   })
   if (updateErr) {
-    return json(502, { error: `The user was created but their password could not be set: ${updateErr.message}` })
+    const undone = await rollback(admin, userId)
+    return json(502, {
+      error: `Could not set up the account (${updateErr.message}). ${undone}`,
+    })
   }
 
   // 4. Force a password change on first login.
@@ -118,7 +133,10 @@ export async function handle(req: Request, deps: Deps): Promise<Response> {
     })
     .eq('id', userId)
   if (profileErr) {
-    return json(502, { error: `The user was created but could not be flagged: ${profileErr.message}` })
+    const undone = await rollback(admin, userId)
+    return json(502, {
+      error: `Could not finish setting up the account (${profileErr.message}). Has migration 0006_password_flow.sql been run? ${undone}`,
+    })
   }
 
   return json(200, { ok: true, email, expires_at: expires })
