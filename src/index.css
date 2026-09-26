@@ -1,0 +1,33 @@
+@import 'tailwindcss';
+
+/*
+ * UST brand tokens. These hex values are APPROXIMATE (taken from the look of the
+ * blue / off-white logo, not from official guidelines). Correct them here and the
+ * whole app updates.
+ */
+@theme {
+  --color-union-blue: #1b3a6b;
+  --color-union-blue-dark: #12284c;
+  --color-union-blue-light: #3b6fb6;
+  --color-union-offwhite: #f7f4ec;
+  --color-union-ink: #1c2230;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Source Serif 4', ui-serif, Georgia, serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--color-union-offwhite);
+  color: var(--color-union-ink);
+  font-family: var(--font-sans);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-serif);
+}
