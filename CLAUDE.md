@@ -27,6 +27,9 @@ wrapped for iOS/Android with Capacitor.
 - Users can only update `first_name`, `last_name`, `student_type` on their own profile (column
   grants in migration 0001). `role` can only be changed via SQL / service role.
 - Admin-only tables must use `public.is_admin()` in their RLS policies.
+- Admins edit other users via the `admin_update_profile` RPC (migration 0004), NOT by loosening RLS/column
+  grants on `profiles`. It refuses non-admins and demoting the last admin. Deleting users / changing
+  emails is done in the Supabase dashboard (needs the service key, deliberately not in the browser app).
 - All content is database-driven and admin-editable. To add an editable content type: new table in a
   numbered migration (RLS: public read where `published`, `is_admin()` write), an entry in
   `src/admin/resources.ts`, and a public page. Text pages (fees, beliefs, give...) live in `public.pages` by slug.
@@ -49,7 +52,7 @@ wrapped for iOS/Android with Capacitor.
 2. **Content + admin — DONE (untested against live Supabase until migrations 0002/0003 are run):**
    tables + dummy seed, teaching library (search, topics, scripture, series), courses + course
    picker quiz, events, faculty, Learning Communities, student stories, text pages, Home from DB,
-   admin editors for every table.
+   admin editors for every table, plus in-app user editing (name, student type, role; migration 0004).
 3. **My Study — NEXT:** enrolled courses, deadlines/calendar, notes, reading lists, saved items.
 4. **Polish:** offline, accessibility, Capacitor readiness, code-splitting (bundle is ~530 kB), password login option.
 
