@@ -116,6 +116,7 @@ export function Layout() {
           <p className="text-xs opacity-70">
             Prototype for Union School of Theology. Content shown is placeholder and will be
             editable by administrators.
+            <span className="mt-2 block opacity-70">Build {__BUILD__}</span>
           </p>
         </div>
       </footer>

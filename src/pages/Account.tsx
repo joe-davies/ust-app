@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth, type Profile, type StudentType } from '../auth/AuthContext'
@@ -47,7 +47,15 @@ function AccountForm({ profile }: { profile: Profile }) {
 }
 
 export default function Account() {
-  const { profile, session, loading } = useAuth()
+  const { profile, session, loading, refreshProfile } = useAuth()
+  const [slow, setSlow] = useState(false)
+
+  // If the details have not arrived after a few seconds, offer a retry instead of waiting forever.
+  useEffect(() => {
+    if (profile) return
+    const t = window.setTimeout(() => setSlow(true), 4000)
+    return () => window.clearTimeout(t)
+  }, [profile])
 
   return (
     <div className="mx-auto max-w-xl px-4 py-12">
@@ -60,7 +68,15 @@ export default function Account() {
         // key = user id, so switching accounts always remounts with that person's details
         <AccountForm key={profile.id} profile={profile} />
       ) : (
-        <p className="mt-6 text-slate-600">{loading || session ? 'Loading your details…' : 'Please log in.'}</p>
+        <div className="mt-6 text-slate-600">
+          <p>{loading || session ? 'Loading your details…' : 'Please log in.'}</p>
+          {slow && session && (
+            <p className="mt-2 text-sm">
+              This is taking longer than usual.{' '}
+              <button onClick={() => void refreshProfile()} className="font-medium text-union-blue-light hover:underline">Try again</button>
+            </p>
+          )}
+        </div>
       )}
       <p className="mt-6 text-sm text-slate-700">
         Want to change your password? <Link to="/set-password" className="font-medium text-union-blue-light hover:underline">Set a new password</Link>
